@@ -9,12 +9,14 @@ final class FloatingPanel: NSPanel {
 @MainActor final class WindowCoordinator: NSObject, NSWindowDelegate {
     let store: AppStore
     let bell: BellPlayer
+    let updates: UpdateCoordinator
+    var hasOpenEditor: Bool { memoWindow != nil || settingsWindow?.isVisible == true || mainWindow?.attachedSheet != nil }
     private var mainWindow: NSWindow?
     private var floating: NSPanel?
     private var memoWindow: NSWindow?
     private var settingsWindow: NSWindow?
     private var currentMemoID: UUID?
-    init(store: AppStore, bell: BellPlayer) { self.store = store; self.bell = bell }
+    init(store: AppStore, bell: BellPlayer, updates: UpdateCoordinator) { self.store = store; self.bell = bell; self.updates = updates }
     func showMain() {
         if mainWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1160, height: 820), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
@@ -53,6 +55,7 @@ final class FloatingPanel: NSPanel {
         showMemo(recordID: id)
     }
     func showMemo(recordID: UUID) {
+        guard !store.isUpdating else { return }
         guard memoWindow == nil else { memoWindow?.makeKeyAndOrderFront(nil); return }
         currentMemoID = recordID
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 476, height: 420), styleMask: [.titled, .closable], backing: .buffered, defer: false)
@@ -71,10 +74,11 @@ final class FloatingPanel: NSPanel {
         catch { showError(error); return false }
     }
     func showSettings() {
+        guard !store.isUpdating else { return }
         if settingsWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 470, height: 530), styleMask: [.titled, .closable], backing: .buffered, defer: false)
             window.title = "설정"; window.titlebarAppearsTransparent = true; window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: SettingsView(store: store) { [weak self] in self?.playBell() })
+            window.contentView = NSHostingView(rootView: SettingsView(store: store, updates: updates) { [weak self] in self?.playBell() })
             window.center(); settingsWindow = window
         }
         settingsWindow?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)

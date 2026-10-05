@@ -62,4 +62,16 @@ final class AppStoreTests: XCTestCase {
         XCTAssertEqual(store.snapshot.timer.remainingSeconds, 60); XCTAssertNotNil(deadline)
         try store.deleteTask(id: second); XCTAssertEqual(store.snapshot.tasks.count, 1)
     }
+    @MainActor func testInstallationInterlockRejectsNewChangesUntilAborted() throws {
+        let repo = MemoryRepository(); let store = AppStore(repository: repo); try store.load()
+        let before = store.snapshot
+        store.setUpdateInstallationInProgress(true)
+        XCTAssertThrowsError(try store.start())
+        XCTAssertThrowsError(try store.addTask(name: "업데이트 중 작업", colorHex: "D90025"))
+        XCTAssertThrowsError(try store.updatePreferences(Preferences()))
+        XCTAssertEqual(store.snapshot, before)
+        store.setUpdateInstallationInProgress(false)
+        try store.start()
+        XCTAssertEqual(store.snapshot.timer.status, .running)
+    }
 }

@@ -17,7 +17,7 @@
 
 ## 빌드와 테스트
 
-macOS14 이상과 Swift5.9 이상을 지원하는 Xcode/Command Line Tools가 필요합니다. 실제 빌드는 Apple Silicon의 Swift6.4 환경에서 검증했습니다. 외부 패키지를 설치할 필요는 없습니다.
+macOS14 이상과 Swift5.9 이상을 지원하는 Xcode/Command Line Tools가 필요합니다. 실제 빌드는 Apple Silicon의 Swift6.4 환경에서 검증했습니다. SwiftPM이 고정 버전의 Sparkle2.10.0을 자동으로 다운로드합니다.
 
 ```sh
 swift test
@@ -25,6 +25,12 @@ bash scripts/build-app.sh
 ```
 
 스크립트는 release 실행 파일과 종소리 리소스를 `.app`에 넣고 로컬 임시 서명(ad-hoc)을 적용합니다. App Store 배포나 Developer ID 공증은 포함하지 않습니다. Intel 및 macOS14 실기기 실행은 별도 검증이 필요합니다.
+
+## 자동 업데이트
+
+v1.1.0부터 새 릴리스를 자동 확인·다운로드합니다. 타이머와 메모가 끝나고 편집 창을 닫으면 설치·재실행합니다. 설정에서 자동 확인과 자동 설치를 끌 수 있고 ‘지금 확인’으로 수동 확인할 수 있습니다. **v1.0.0 사용자는 v1.1.0을 한 번 직접 설치해야 합니다.**
+
+[자동 업데이트 및 다음 릴리스 배포 방법](docs/automatic-updates.md)을 참고하세요.
 
 ## 저장과 복구
 

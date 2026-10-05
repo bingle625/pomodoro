@@ -13,6 +13,9 @@ struct MainView: View {
             sidebar
             Rectangle().fill(Theme.border).frame(width: 1)
             VStack(spacing: 0) {
+                if store.isUpdating {
+                    Label("업데이트를 설치하고 있어요. 잠시 후 다시 실행합니다.", systemImage: "arrow.triangle.2.circlepath").font(.callout).padding(14)
+                }
                 if let storageError = store.storageError {
                     HStack { Image(systemName: "exclamationmark.triangle"); Text(storageError).font(.caption).textSelection(.enabled); Spacer(); Button("다시 시도") { attempt { try store.retrySave() } } }
                         .padding(16).background(Theme.error.opacity(0.08)).foregroundStyle(Theme.error)
@@ -31,7 +34,7 @@ struct MainView: View {
                 TimerBar(store: store) { windows.showFloating() }.padding(.bottom, 22).padding(.top, 12)
             }
         }.background(Theme.background).foregroundStyle(Theme.text).preferredColorScheme(.light)
-            .frame(minWidth: 760, minHeight: 600)
+            .frame(minWidth: 760, minHeight: 600).disabled(store.isUpdating)
             .sheet(isPresented: $editor) { TaskEditor(store: store, task: editingTask) }
             .alert("작업을 삭제할까요?", isPresented: $deleting) {
                 Button("취소", role: .cancel) { }

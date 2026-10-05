@@ -35,3 +35,13 @@ Computer Use 도구가 Pomodoro 접근을 ‘Computer Use was not approved to us
 사용자가 플로팅 창이 움직이지 않는 현상을 보고했다. 배경 이동 옵션에만 의존하던 구현을 바꾸어 다이얼과 상단 제목의 NSView가 원래 mouseDown 이벤트를 `NSWindow.performDrag(with:)`에 전달하게 했다. 비활성 창의 첫 클릭도 받는다. Apple의 [창 드래그 API 문서](https://developer.apple.com/documentation/appkit/nswindow/performdrag(with:))와 로컬 SDK 선언을 확인했다. 수정 후 Core22개 테스트가 성공했으며, 실제 마우스 드래그 재검증은 Computer Use 접근 거절로 수행하지 못했다.
 
 사용자 요청에 따라 히트맵을 최근 주/월이 왼쪽인 순서로 바꾸고 월 레이블을 추가했다. 미래 날짜를 비우며 월~일 순서로 정렬한다. 연도 경계와 DST를 포함한2개 테스트를 추가했다.
+
+## v1.1.0 자동 업데이트
+
+- SwiftPM으로 Sparkle2.10.0과 아티팩트 체크섬을 고정하고 프레임워크를 앱 내부에 포함했다.
+- Core 테스트27개 성공. 설치 보류의6가지 조건, 자동 설치를 대기 중 끄는 경우, 수동 설치 구분, 설치 중 새 변경 차단과 취소 후 복구를 포함한다.
+- Sparkle의 실제 선택자와 구현한 delegate 메서드의 일치를 실행 검증했다. 패키징된 번들로 SPUUpdater.start()가 설정 검증에 성공함을 확인했다. 이 검증은 UI나 실제 업데이트를 실행하기 전 종료했다.
+- DMG와 appcast의 Ed25519 서명 검증 성공. 변조한 DMG와 피드는 검증 실패함을 확인했다. DMG를 읽기 전용으로 마운트하여 앱 서명과 Sparkle·종소리 리소스를 확인했다.
+- 독립 코드 리뷰에서 발견한 비동기 설치 중 새 편집 가능성, 대기 중 자동 설치 해제 무시 문제를 회귀 테스트를 먼저 작성한 뒤 수정했다.
+- 기존 JSON schemaVersion1과 기록 형식은 변경하지 않는다. 개인 서명키는 Keychain의 local.pomodoro.app 계정에 있으며 공개키만 저장소에 포함한다.
+- 실제 설치본을 미래 버전으로 교체하고 재실행하는 전체 경로, 다른 Mac 최초 실행과 Gatekeeper 동작은 미검증이다. Developer ID 공증은 포함하지 않는다.

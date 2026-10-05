@@ -5,6 +5,8 @@ import Observation
     public private(set) var snapshot = AppSnapshot()
     public private(set) var storageError: String?
     public private(set) var isReadOnly = false
+    public private(set) var isUpdating = false
+    public func setUpdateInstallationInProgress(_ active: Bool) { isUpdating = active }
     public private(set) var currentDate = Date()
     public var onBell: (() -> Void)?
     @ObservationIgnored private let repository: any SnapshotRepository
@@ -23,6 +25,7 @@ import Observation
         try tick()
     }
     private func ensureWritable() throws {
+        guard !isUpdating else { throw PomodoroError.invalid("업데이트 설치 중입니다. 잠시 기다려 주세요.") }
         guard !isReadOnly else { throw PomodoroError.invalid("기록을 읽을 수 없어 변경할 수 없습니다.") }
         guard pending == nil else { throw PomodoroError.invalid("저장을 먼저 다시 시도해 주세요.") }
     }
@@ -53,7 +56,7 @@ import Observation
     }
     public func tick() throws {
         currentDate = now()
-        guard !isReadOnly, pending == nil else { return }
+        guard !isReadOnly, !isUpdating, pending == nil else { return }
         let p = snapshot.preferences
         try editTimer { $0.advance(at: $1, preferences: p) }
     }

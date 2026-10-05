@@ -1,8 +1,9 @@
 import AppKit
 import PomodoroCore
-@MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
+@MainActor final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var store: AppStore!
     private var windows: WindowCoordinator!
+    private var updates: UpdateCoordinator!
     private var ticker: Timer?
     private let bell = BellPlayer()
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -13,17 +14,19 @@ import PomodoroCore
             if let path = ProcessInfo.processInfo.environment["POMODORO_DATA_PATH"] { url = URL(fileURLWithPath: path) }
             else { url = try LocalRepository.defaultFileURL() }
             store = AppStore(repository: LocalRepository(fileURL: url))
-            windows = WindowCoordinator(store: store, bell: bell)
+            updates = UpdateCoordinator(store: store)
+            windows = WindowCoordinator(store: store, bell: bell, updates: updates)
+            updates.hasOpenEditor = { [weak windows = windows] in windows?.hasOpenEditor ?? false }
             store.onBell = { [weak self] in self?.windows.playBell() }
             do { try store.load() } catch { /* Main window displays persistent storage error. */ }
-            installMenu(); windows.showMain(); windows.synchronizeMemo()
+            installMenu(); windows.showMain(); windows.synchronizeMemo(); updates.start()
             ticker = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in Task { @MainActor in self?.update() } }
             if let ticker { RunLoop.main.add(ticker, forMode: .common) }
             NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(woke), name: NSWorkspace.didWakeNotification, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(screenChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         } catch { let alert = NSAlert(); alert.messageText = "앱을 시작할 수 없어요"; alert.informativeText = error.localizedDescription; alert.runModal(); NSApp.terminate(nil) }
     }
-    private func update() { try? store.tick(); windows.synchronizeMemo() }
+    private func update() { try? store.tick(); windows.synchronizeMemo(); updates.synchronize() }
     @objc private func woke() { update() }
     @objc private func screenChanged() { windows.screenConfigurationChanged() }
     func applicationDidBecomeActive(_ notification: Notification) { if store != nil { update() } }
@@ -40,6 +43,7 @@ import PomodoroCore
         let menu = NSMenu()
         let app = NSMenuItem(); let submenu = NSMenu()
         submenu.addItem(withTitle: "Pomodoro 정보", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        let update = NSMenuItem(title: "업데이트 확인…", action: #selector(checkForUpdates), keyEquivalent: ""); update.target = self; submenu.addItem(update)
         submenu.addItem(.separator())
         let settings = NSMenuItem(title: "설정…", action: #selector(openSettings), keyEquivalent: ","); settings.target = self; submenu.addItem(settings)
         submenu.addItem(.separator()); submenu.addItem(withTitle: "Pomodoro 가리기", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
@@ -53,6 +57,11 @@ import PomodoroCore
         let floating = NSMenuItem(title: "플로팅 타이머", action: #selector(openFloating), keyEquivalent: "2"); floating.target = self; windowMenu.addItem(floating)
         window.submenu = windowMenu; menu.addItem(window); NSApp.mainMenu = menu
     }
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(checkForUpdates) { return updates?.canCheck ?? false }
+        return true
+    }
+    @objc private func checkForUpdates() { updates.checkForUpdates() }
     @objc private func openSettings() { windows.showSettings() }
     @objc private func openMain() { windows.showMain() }
     @objc private func openFloating() { windows.showFloating() }

@@ -2,6 +2,7 @@ import SwiftUI
 import PomodoroCore
 struct SettingsView: View {
     let store: AppStore
+    let updates: UpdateCoordinator
     let previewBell: () -> Void
     @State private var focus = 25
     @State private var rest = 5
@@ -10,7 +11,7 @@ struct SettingsView: View {
     @State private var error: String?
     @State private var saved = false
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        ScrollView { VStack(alignment: .leading, spacing: 20) {
             Text("나의 집중 리듬").font(.system(size: 24, weight: .semibold))
             Text("나에게 맞는 집중과 휴식 시간을 정해 보세요.").font(.system(size: 13)).foregroundStyle(Theme.secondary)
             Card {
@@ -27,7 +28,19 @@ struct SettingsView: View {
             Text("집중이 끝나면 메모 창이 열려요. 자동 시작을 켜면 메모를 쓰는 동안에도 휴식 시간이 흘러요.").font(.system(size: 12)).foregroundStyle(Theme.secondary)
             if let error { Text(error).font(.caption).foregroundStyle(Theme.error) }
             HStack { if saved { Label("설정을 저장했어요", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.rest) }; Spacer(); Button(store.hasPendingSave ? "저장 다시 시도" : "저장") { save() }.buttonStyle(PrimaryButtonStyle()) }
-        }.padding(30).frame(width: 410).background(Theme.background).preferredColorScheme(.light)
+            Divider().padding(.top, 4)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack { Text("앱 업데이트").font(.system(size: 16, weight: .semibold)); Spacer(); Text("v\(updates.version)").font(.caption).foregroundStyle(Theme.secondary) }
+                Toggle("새 버전 자동 확인", isOn: Binding(get: { updates.automaticallyChecks }, set: { updates.setAutomaticChecking($0) })).toggleStyle(.switch)
+                Toggle("자동 다운로드 및 설치", isOn: Binding(get: { updates.automaticallyDownloads }, set: { updates.setAutomaticDownloading($0) })).toggleStyle(.switch).disabled(!updates.automaticallyChecks)
+                Text(updates.waitingMessage ?? "새 버전은 자동으로 다운로드합니다. 타이머와 메모가 끝나고 설정 창을 닫으면 설치 후 다시 실행합니다.").font(.system(size: 12)).foregroundStyle(Theme.secondary)
+                HStack {
+                    if let checked = updates.lastChecked { Text("최근 확인 \(TimeFormatting.date(checked, pattern: "M/d HH:mm"))").font(.caption).foregroundStyle(Theme.muted) }
+                    Spacer()
+                    Button("지금 확인") { updates.checkForUpdates() }.disabled(!updates.canCheck)
+                }
+            }
+        }.padding(30) }.frame(width: 470, height: 680).background(Theme.background).preferredColorScheme(.light)
             .onAppear { let p = store.snapshot.preferences; focus = p.focusMinutes; rest = p.breakMinutes; sound = p.soundEnabled; auto = p.autoStart }
     }
     private func durationRow(_ title: String, value: Binding<Int>, color: Color) -> some View {
