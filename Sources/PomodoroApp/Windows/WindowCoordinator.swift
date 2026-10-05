@@ -10,7 +10,9 @@ final class FloatingPanel: NSPanel {
     let store: AppStore
     let bell: BellPlayer
     let updates: UpdateCoordinator
-    var hasOpenEditor: Bool { memoWindow != nil || settingsWindow?.isVisible == true || mainWindow?.attachedSheet != nil }
+    var hasOpenEditor: Bool { memoWindow != nil || mainWindow?.attachedSheet != nil }
+    var settingsOpen: Bool { settingsWindow?.isVisible == true }
+    private(set) var settingsDirty = false
     private var mainWindow: NSWindow?
     private var floating: NSPanel?
     private var memoWindow: NSWindow?
@@ -78,7 +80,7 @@ final class FloatingPanel: NSPanel {
         if settingsWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 470, height: 530), styleMask: [.titled, .closable], backing: .buffered, defer: false)
             window.title = "설정"; window.titlebarAppearsTransparent = true; window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: SettingsView(store: store, updates: updates) { [weak self] in self?.playBell() })
+            window.contentView = NSHostingView(rootView: SettingsView(store: store, updates: updates, previewBell: { [weak self] in self?.playBell() }, draftChanged: { [weak self] dirty in self?.settingsDirty = dirty }))
             window.center(); settingsWindow = window
         }
         settingsWindow?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)

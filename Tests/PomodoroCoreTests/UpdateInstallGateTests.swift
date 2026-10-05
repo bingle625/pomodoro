@@ -36,4 +36,25 @@ final class UpdateInstallGateTests: XCTestCase {
         gate.process(UpdateSafety(), automaticInstallationEnabled: false)
         XCTAssertEqual(installs, 1)
     }
+    @MainActor func testManualInstallWithCleanSettingsOpenRunsButAutomaticWaits() {
+        let safety = UpdateSafety(settingsOpen: true, settingsDirty: false)
+        let manual = UpdateInstallGate(); var manualInstalls = 0
+        manual.deferInstallation { manualInstalls += 1 }
+        manual.process(safety)
+        XCTAssertEqual(manualInstalls, 1)
+        let automatic = UpdateInstallGate(); var automaticInstalls = 0
+        automatic.deferInstallation(automatic: true) { automaticInstalls += 1 }
+        automatic.process(safety)
+        XCTAssertEqual(automaticInstalls, 0)
+        automatic.process(UpdateSafety())
+        XCTAssertEqual(automaticInstalls, 1)
+    }
+    @MainActor func testManualInstallWaitsForUnsavedSettings() {
+        let gate = UpdateInstallGate(); var installs = 0
+        gate.deferInstallation { installs += 1 }
+        gate.process(UpdateSafety(settingsOpen: true, settingsDirty: true))
+        XCTAssertEqual(installs, 0)
+        gate.process(UpdateSafety(settingsOpen: true, settingsDirty: false))
+        XCTAssertEqual(installs, 1)
+    }
 }

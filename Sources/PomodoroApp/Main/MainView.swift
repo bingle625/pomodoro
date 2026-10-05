@@ -16,6 +16,9 @@ struct MainView: View {
                 if store.isUpdating {
                     Label("업데이트를 설치하고 있어요. 잠시 후 다시 실행합니다.", systemImage: "arrow.triangle.2.circlepath").font(.callout).padding(14)
                 }
+                if let message = windows.updates.waitingMessage, !store.isUpdating {
+                    Label(message, systemImage: "arrow.down.circle").font(.callout).padding(14)
+                }
                 if let storageError = store.storageError {
                     HStack { Image(systemName: "exclamationmark.triangle"); Text(storageError).font(.caption).textSelection(.enabled); Spacer(); Button("다시 시도") { attempt { try store.retrySave() } } }
                         .padding(16).background(Theme.error.opacity(0.08)).foregroundStyle(Theme.error)

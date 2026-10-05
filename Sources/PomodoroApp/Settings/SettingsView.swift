@@ -4,6 +4,10 @@ struct SettingsView: View {
     let store: AppStore
     let updates: UpdateCoordinator
     let previewBell: () -> Void
+    let draftChanged: (Bool) -> Void
+    private var draft: Preferences {
+        var p = Preferences(); p.focusMinutes = focus; p.breakMinutes = rest; p.soundEnabled = sound; p.autoStart = auto; return p
+    }
     @State private var focus = 25
     @State private var rest = 5
     @State private var sound = true
@@ -41,12 +45,15 @@ struct SettingsView: View {
                 }
             }
         }.padding(30) }.frame(width: 470, height: 680).background(Theme.background).preferredColorScheme(.light)
+            .disabled(store.isUpdating)
+            .onChange(of: draft) { _, value in draftChanged(value != store.snapshot.preferences) }
+            .onChange(of: store.snapshot.preferences) { _, value in draftChanged(draft != value) }
             .onAppear { let p = store.snapshot.preferences; focus = p.focusMinutes; rest = p.breakMinutes; sound = p.soundEnabled; auto = p.autoStart }
     }
     private func durationRow(_ title: String, value: Binding<Int>, color: Color) -> some View {
         HStack { Circle().fill(color).frame(width: 8, height: 8); Text(title); Spacer(); TextField(title, value: value, format: .number).accessibilityLabel(title).textFieldStyle(.roundedBorder).frame(width: 48); Text("분").foregroundStyle(Theme.muted); Stepper(title, value: value, in: 1...60).labelsHidden() }
     }
     private func save() {
-        do { if store.hasPendingSave { try store.retrySave() }; var p = Preferences(); p.focusMinutes = focus; p.breakMinutes = rest; p.soundEnabled = sound; p.autoStart = auto; try store.updatePreferences(p); error = nil; saved = true } catch { self.error = error.localizedDescription }
+        do { if store.hasPendingSave { try store.retrySave() }; var p = Preferences(); p.focusMinutes = focus; p.breakMinutes = rest; p.soundEnabled = sound; p.autoStart = auto; try store.updatePreferences(p); error = nil; saved = true; draftChanged(false) } catch { self.error = error.localizedDescription }
     }
 }

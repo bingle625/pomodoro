@@ -17,6 +17,7 @@ import PomodoroCore
             updates = UpdateCoordinator(store: store)
             windows = WindowCoordinator(store: store, bell: bell, updates: updates)
             updates.hasOpenEditor = { [weak windows = windows] in windows?.hasOpenEditor ?? false }
+            updates.settingsState = { [weak windows = windows] in (windows?.settingsOpen ?? false, windows?.settingsDirty ?? false) }
             store.onBell = { [weak self] in self?.windows.playBell() }
             do { try store.load() } catch { /* Main window displays persistent storage error. */ }
             installMenu(); windows.showMain(); windows.synchronizeMemo(); updates.start()
