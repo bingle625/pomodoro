@@ -50,3 +50,7 @@ v1.1.0부터 새 릴리스를 자동 확인·다운로드합니다. 타이머와
 - [기능 설계](docs/superpowers/specs/2026-10-05-pomodoro-design.md)
 - [구현 계획](docs/superpowers/plans/2026-10-05-pomodoro-implementation.md)
 - [검증 결과](docs/verification.md)
+
+## 알림음 출처
+
+종료 알림음은 hykenfreak의 [Notification Chime](https://freesound.org/people/hykenfreak/sounds/202029/)이며 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)으로 제공됩니다. 5초 길이의 원본 파일을 편집 없이 사용하고 앱에서 재생 음량을 55%로 설정합니다. 같은 출처 정보를 앱 번들의 `Audio-Credits.txt`에도 포함합니다.

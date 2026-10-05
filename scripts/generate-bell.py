@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Generate an original, short bell; no downloaded sound assets."""
+"""Generate the legacy synthetic bell for comparison, without replacing the app audio."""
 import math, struct, wave
 from pathlib import Path
-path = Path(__file__).resolve().parents[1] / 'Sources/PomodoroApp/Resources/bell.wav'
+path = Path(__file__).resolve().parents[1] / 'dist/generated/original-bell.wav'
+path.parent.mkdir(parents=True, exist_ok=True)
 rate = 44100
 with wave.open(str(path), 'wb') as audio:
     audio.setnchannels(1); audio.setsampwidth(2); audio.setframerate(rate)
