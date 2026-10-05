@@ -15,7 +15,7 @@ import PomodoroCore
         super.init()
         popover.behavior = .transient
         popover.animates = true
-        popover.contentSize = NSSize(width: 320, height: 460)
+        popover.contentSize = NSSize(width: 320, height: 500)
         popover.contentViewController = NSHostingController(rootView: MenuBarTimerView(
             store: store,
             perform: { [weak self] action in self?.perform(action) },

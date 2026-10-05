@@ -135,9 +135,13 @@ import Observation
             try commit(next)
         }
     }
-    public func saveMemo(recordID: UUID, text: String) throws {
+    public func saveMemo(recordID: UUID, text: String, taskID: UUID? = nil) throws {
         try ensureWritable(); var next = snapshot
         guard let index = next.records.firstIndex(where: { $0.id == recordID }) else { throw PomodoroError.invalid("기록을 찾을 수 없어요.") }
+        if let taskID {
+            guard next.tasks.contains(where: { $0.id == taskID }) else { throw PomodoroError.invalid("이동할 작업을 찾을 수 없어요.") }
+            next.records[index].taskID = taskID
+        }
         next.records[index].memo = text; next.pendingMemoIDs.removeAll { $0 == recordID }; try commit(next)
     }
     public func skipMemo(recordID: UUID) throws {

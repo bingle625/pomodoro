@@ -5,6 +5,7 @@ struct MemoView: View {
     let recordID: UUID
     let close: () -> Void
     @State private var draft = ""
+    @State private var taskID: UUID?
     @State private var error: String?
     @FocusState private var focused: Bool
     private var record: FocusRecord? { store.snapshot.records.first { $0.id == recordID } }
@@ -13,8 +14,18 @@ struct MemoView: View {
             HStack { Image(systemName: "square.and.pencil").foregroundStyle(Theme.focus); Text("잠깐의 회고").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.secondary) }
             Text("이번 집중 시간에\n무엇을 했나요?").font(.system(size: 25, weight: .semibold)).lineSpacing(4)
             if let record {
-                let task = store.snapshot.tasks.first { $0.id == record.taskID }
-                Text("\(task?.name ?? "작업") · \(TimeFormatting.duration(record.focusedSeconds)) · \(TimeFormatting.date(record.endedAt, pattern: "M월 d일 HH:mm"))").font(.system(size: 12)).foregroundStyle(Theme.secondary).lineLimit(2)
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("작업", selection: $taskID) {
+                        ForEach(store.snapshot.tasks) { task in
+                            Text(task.name).tag(Optional(task.id))
+                        }
+                    }.pickerStyle(.menu)
+                        .disabled(store.isReadOnly || store.isUpdating || store.hasPendingSave)
+                    Text("저장하면 선택한 작업으로 기록을 옮겨요.")
+                        .font(.system(size: 11)).foregroundStyle(Theme.muted)
+                    Text("\(TimeFormatting.duration(record.focusedSeconds)) · \(TimeFormatting.date(record.endedAt, pattern: "M월 d일 HH:mm"))")
+                        .font(.system(size: 12)).foregroundStyle(Theme.secondary).lineLimit(2)
+                }
             }
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $draft).font(.system(size: 14)).scrollContentBackground(.hidden).padding(8).focused($focused)
@@ -31,12 +42,12 @@ struct MemoView: View {
                 Button(store.hasPendingSave ? "저장 다시 시도" : "저장") { finish(save: true) }.buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.return, modifiers: .command)
             }
         }.padding(28).frame(width: 420).background(Theme.background).preferredColorScheme(.light)
-            .onAppear { draft = record?.memo ?? ""; focused = true }
+            .onAppear { draft = record?.memo ?? ""; taskID = record?.taskID; focused = true }
     }
     private func finish(save: Bool) {
         do {
             if store.hasPendingSave { try store.retrySave() }
-            if save { try store.saveMemo(recordID: recordID, text: draft) } else { try store.skipMemo(recordID: recordID) }
+            if save { try store.saveMemo(recordID: recordID, text: draft, taskID: taskID) } else { try store.skipMemo(recordID: recordID) }
             close()
         } catch { self.error = error.localizedDescription }
     }

@@ -18,6 +18,16 @@ struct MenuBarTimerView: View {
                 Text(timer.status == .paused ? "일시정지 · 손잡이로 시간 조절" : timer.status == .running ? "진행 중" : "손잡이를 드래그해 시간 조절")
                     .font(.caption).foregroundStyle(Theme.secondary)
             }
+            Picker("작업", selection: Binding(
+                get: { store.snapshot.selectedTaskID },
+                set: { id in perform { try store.selectTask(id) } }
+            )) {
+                ForEach(store.snapshot.tasks) { task in
+                    Text(task.name).tag(task.id)
+                }
+            }.pickerStyle(.menu)
+                .disabled(timer.status != .ready || store.isReadOnly || store.hasPendingSave || store.isUpdating)
+                .help(timer.status == .ready ? "집중할 작업을 선택하세요" : "작업을 변경하려면 타이머를 종료해 주세요")
             AdjustableTimerDial(store: store, perform: perform, previewMinutes: $previewMinutes)
                 .frame(width: 280, height: 260)
             HStack(spacing: 16) {
@@ -52,6 +62,6 @@ struct MenuBarTimerView: View {
                 Spacer()
                 Button("플로팅 타이머", action: openFloating)
             }.buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(Theme.secondary)
-        }.padding(20).frame(width: 320, height: 460).background(Theme.background).preferredColorScheme(.light)
+        }.padding(20).frame(width: 320, height: 500).background(Theme.background).preferredColorScheme(.light)
     }
 }
