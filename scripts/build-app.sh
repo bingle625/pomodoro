@@ -7,6 +7,7 @@ app_dir="$PWD/dist/Pomodoro.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources" "$app_dir/Contents/Frameworks"
 cp "$binary_dir/Pomodoro" "$app_dir/Contents/MacOS/Pomodoro"
 cp Packaging/Info.plist "$app_dir/Contents/Info.plist"
+cp Packaging/AppIcon.icns "$app_dir/Contents/Resources/AppIcon.icns"
 # SwiftPM locates bundles next to the executable or under Bundle.main.resourceURL.
 for resource in "$binary_dir"/*.bundle; do
     if [[ -d "$resource" ]]; then

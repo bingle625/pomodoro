@@ -134,3 +134,16 @@ macOS 시스템 글꼴을 사용하고 한국어는 시스템의 한국어 글�
 - VoiceOver에서 버튼 목적, 타이머 단계·남은 시간, 차트 요약을 이해할 수 있어야 한다. 초마다 남은 시간을 강제로 읽지 않는다.
 - 텍스트와 컨트롤의 대비, 포커스 표시, 긴 한국어 메모, 작은 창 배치를 실제 화면에서 검증한다.
 - 장식용 그라데이션, 웹 커뮤니티의 검색·게시 상태·프로필 요소, 호버 시 카드 이동은 추가하지 않는다.
+
+## 앱 아이콘
+
+연보라색 둥근 사각형 위에 25분(150도)을 나타내는 붉은 부채꼴과 시계 눈금을 배치한다. 숫자를 생략하고 16·32px에서는 5분 눈금만 남겨 작은 크기의 식별성을 유지한다.
+
+원본은 `scripts/generate-app-icon.swift`이며 AppKit으로 크기별 PNG를 직접 그린다. 수정 후 프로젝트 루트에서 아래 명령으로 배포용 아이콘을 다시 만든다.
+
+```sh
+swift scripts/generate-app-icon.swift
+iconutil -c icns Packaging/AppIcon.iconset -o Packaging/AppIcon.icns
+```
+
+`Packaging/Info.plist`의 `CFBundleIconFile`과 빌드 스크립트가 `AppIcon.icns`를 앱 번들에 연결한다.
