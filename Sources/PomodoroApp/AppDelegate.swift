@@ -5,6 +5,7 @@ import PomodoroCore
     private var windows: WindowCoordinator!
     private var updates: UpdateCoordinator!
     private var ticker: Timer?
+    private var menuBarTimer: MenuBarTimer?
     private let bell = BellPlayer()
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -20,6 +21,7 @@ import PomodoroCore
             updates.settingsState = { [weak windows = windows] in (windows?.settingsOpen ?? false, windows?.settingsDirty ?? false) }
             store.onBell = { [weak self] in self?.windows.playBell() }
             do { try store.load() } catch { /* Main window displays persistent storage error. */ }
+            menuBarTimer = MenuBarTimer(store: store, windows: windows)
             installMenu(); windows.showMain(); windows.synchronizeMemo(); updates.start()
             ticker = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in Task { @MainActor in self?.update() } }
             if let ticker { RunLoop.main.add(ticker, forMode: .common) }
@@ -27,7 +29,7 @@ import PomodoroCore
             NotificationCenter.default.addObserver(self, selector: #selector(screenChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         } catch { let alert = NSAlert(); alert.messageText = "앱을 시작할 수 없어요"; alert.informativeText = error.localizedDescription; alert.runModal(); NSApp.terminate(nil) }
     }
-    private func update() { try? store.tick(); windows.synchronizeMemo(); updates.synchronize() }
+    private func update() { try? store.tick(); windows.synchronizeMemo(); menuBarTimer?.synchronize(); updates.synchronize() }
     @objc private func woke() { update() }
     @objc private func screenChanged() { windows.screenConfigurationChanged() }
     func applicationDidBecomeActive(_ notification: Notification) { if store != nil { update() } }
