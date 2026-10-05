@@ -51,3 +51,20 @@ public struct TimerCompletion {
     public let focusedSeconds: TimeInterval
     public let completed: Bool
 }
+public struct AppSnapshot: Codable, Equatable {
+    public var schemaVersion = 1
+    public var tasks: [FocusTask]
+    public var selectedTaskID: UUID
+    public var preferences = Preferences()
+    public var timer = TimerState()
+    public var records: [FocusRecord] = []
+    public var pendingMemoIDs: [UUID] = []
+    public init() {
+        let task = FocusTask(name: "나의 집중")
+        tasks = [task]; selectedTaskID = task.id
+    }
+}
+public enum PomodoroError: LocalizedError {
+    case invalid(String)
+    public var errorDescription: String? { if case .invalid(let message) = self { return message }; return nil }
+}
