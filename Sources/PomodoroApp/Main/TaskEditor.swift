@@ -16,11 +16,11 @@ struct TaskEditor: View {
                 Button { color = hex } label: { Circle().fill(Color(hex: hex)).frame(width: 24, height: 24).padding(4).overlay(Circle().stroke(color == hex ? Theme.text : .clear, lineWidth: 1.5)) }.buttonStyle(.plain).accessibilityLabel("색상 \(hex)")
             } }
             if let error { Text(error).foregroundStyle(Theme.error).font(.caption) }
-            HStack { Spacer(); Button("취소") { dismiss() }; Button("저장", action: save).buttonStyle(PrimaryButtonStyle()) }
+            HStack { Spacer(); Button("취소") { dismiss() }; Button(store.hasPendingSave ? "저장 다시 시도" : "저장", action: save).buttonStyle(PrimaryButtonStyle()) }
         }.padding(28).frame(width: 370).onAppear { name = task?.name ?? ""; color = task?.colorHex ?? "D90025" }
     }
     private func save() {
-        do { if let task { try store.updateTask(id: task.id, name: name, colorHex: color) } else { try store.addTask(name: name, colorHex: color) }; dismiss() }
+        do { if store.hasPendingSave { try store.retrySave(); dismiss(); return }; if let task { try store.updateTask(id: task.id, name: name, colorHex: color) } else { try store.addTask(name: name, colorHex: color) }; dismiss() }
         catch { self.error = error.localizedDescription }
     }
 }

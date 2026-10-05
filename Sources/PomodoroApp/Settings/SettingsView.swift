@@ -26,14 +26,14 @@ struct SettingsView: View {
             Toggle("다음 단계 자동 시작", isOn: $auto).toggleStyle(.switch)
             Text("집중이 끝나면 메모 창이 열려요. 자동 시작을 켜면 메모를 쓰는 동안에도 휴식 시간이 흘러요.").font(.system(size: 12)).foregroundStyle(Theme.secondary)
             if let error { Text(error).font(.caption).foregroundStyle(Theme.error) }
-            HStack { if saved { Label("설정을 저장했어요", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.rest) }; Spacer(); Button("저장") { save() }.buttonStyle(PrimaryButtonStyle()) }
+            HStack { if saved { Label("설정을 저장했어요", systemImage: "checkmark").font(.caption).foregroundStyle(Theme.rest) }; Spacer(); Button(store.hasPendingSave ? "저장 다시 시도" : "저장") { save() }.buttonStyle(PrimaryButtonStyle()) }
         }.padding(30).frame(width: 410).background(Theme.background).preferredColorScheme(.light)
             .onAppear { let p = store.snapshot.preferences; focus = p.focusMinutes; rest = p.breakMinutes; sound = p.soundEnabled; auto = p.autoStart }
     }
     private func durationRow(_ title: String, value: Binding<Int>, color: Color) -> some View {
-        HStack { Circle().fill(color).frame(width: 8, height: 8); Text(title); Spacer(); TextField("분", value: value, format: .number).textFieldStyle(.roundedBorder).frame(width: 48); Text("분").foregroundStyle(Theme.muted); Stepper("", value: value, in: 1...60).labelsHidden() }
+        HStack { Circle().fill(color).frame(width: 8, height: 8); Text(title); Spacer(); TextField(title, value: value, format: .number).accessibilityLabel(title).textFieldStyle(.roundedBorder).frame(width: 48); Text("분").foregroundStyle(Theme.muted); Stepper(title, value: value, in: 1...60).labelsHidden() }
     }
     private func save() {
-        do { var p = Preferences(); p.focusMinutes = focus; p.breakMinutes = rest; p.soundEnabled = sound; p.autoStart = auto; try store.updatePreferences(p); error = nil; saved = true } catch { self.error = error.localizedDescription }
+        do { if store.hasPendingSave { try store.retrySave() }; var p = Preferences(); p.focusMinutes = focus; p.breakMinutes = rest; p.soundEnabled = sound; p.autoStart = auto; try store.updatePreferences(p); error = nil; saved = true } catch { self.error = error.localizedDescription }
     }
 }
