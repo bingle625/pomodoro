@@ -31,6 +31,8 @@ public struct LocalRepository: SnapshotRepository {
         guard !s.tasks.isEmpty, taskIDs.count == s.tasks.count, taskIDs.contains(s.selectedTaskID),
               s.tasks.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
               (1...60).contains(s.preferences.focusMinutes), (1...60).contains(s.preferences.breakMinutes),
+              (1...60).contains(s.preferences.longBreakMinutes), (1...12).contains(s.preferences.longBreakInterval),
+              (0...11).contains(s.timer.completedFocusCount),
               recordIDs.count == s.records.count,
               s.records.allSatisfy({ taskIDs.contains($0.taskID) && $0.focusedSeconds.isFinite && $0.focusedSeconds >= 1 && $0.endedAt >= $0.startedAt }),
               Set(s.pendingMemoIDs).count == s.pendingMemoIDs.count,

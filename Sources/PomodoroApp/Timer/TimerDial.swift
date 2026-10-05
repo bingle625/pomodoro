@@ -34,6 +34,6 @@ struct TimerDial: View {
                     }
                 }
             }
-        }.accessibilityElement(children: .ignore).accessibilityLabel("\(phase == .focus ? "집중" : "휴식") 타이머").accessibilityValue(TimeFormatting.countdown(remainingSeconds))
+        }.accessibilityElement(children: .ignore).accessibilityLabel("\(phase.title) 타이머").accessibilityValue(TimeFormatting.countdown(remainingSeconds))
     }
 }

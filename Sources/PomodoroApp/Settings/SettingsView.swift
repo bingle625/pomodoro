@@ -6,10 +6,12 @@ struct SettingsView: View {
     let previewBell: () -> Void
     let draftChanged: (Bool) -> Void
     private var draft: Preferences {
-        var p = Preferences(); p.focusMinutes = focus; p.breakMinutes = rest; p.soundEnabled = sound; p.autoStart = auto; p.transparentFloatingBackground = transparent; return p
+        var p = Preferences(); p.focusMinutes = focus; p.breakMinutes = rest; p.longBreakMinutes = longRest; p.longBreakInterval = longBreakInterval; p.soundEnabled = sound; p.autoStart = auto; p.transparentFloatingBackground = transparent; return p
     }
     @State private var focus = 25
     @State private var rest = 5
+    @State private var longRest = 15
+    @State private var longBreakInterval = 4
     @State private var sound = true
     @State private var auto = false
     @State private var transparent = false
@@ -23,10 +25,24 @@ struct SettingsView: View {
                 VStack(spacing: 20) {
                     durationRow("집중 시간", value: $focus, color: Theme.focus)
                     Divider()
-                    durationRow("휴식 시간", value: $rest, color: Theme.rest)
+                    durationRow("짧은 휴식 시간", value: $rest, color: Theme.rest)
+                    Divider()
+                    durationRow("긴 휴식 시간", value: $longRest, color: Theme.rest)
+                    Divider()
+                    HStack {
+                        Circle().fill(Theme.rest).frame(width: 8, height: 8)
+                        Text("긴 휴식 주기")
+                        Spacer()
+                        Text("집중")
+                        TextField("긴 휴식 주기", value: $longBreakInterval, format: .number)
+                            .accessibilityLabel("긴 휴식 주기").textFieldStyle(.roundedBorder).frame(width: 48)
+                        Text("회마다").foregroundStyle(Theme.muted)
+                        Stepper("긴 휴식 주기", value: $longBreakInterval, in: 1...12).labelsHidden()
+                    }
                 }
             }
-            Text("1~60분 · 변경한 시간은 다음 세션부터 적용돼요").font(.system(size: 12)).foregroundStyle(Theme.muted)
+            Text("시간 1~60분 · 주기 1~12회 · 변경한 설정은 다음 세션부터 적용돼요").font(.system(size: 12)).foregroundStyle(Theme.muted)
+            Text("집중을 설정한 횟수만큼 완료하면 긴 휴식으로 전환해요. 중도 종료한 집중은 세지 않아요.").font(.system(size: 12)).foregroundStyle(Theme.secondary)
             Toggle("종료 종소리", isOn: $sound).toggleStyle(.switch)
             Button { previewBell() } label: { Label("종소리 미리 듣기", systemImage: "speaker.wave.2") }.buttonStyle(.borderless)
             Toggle("다음 단계 자동 시작", isOn: $auto).toggleStyle(.switch)
@@ -51,7 +67,7 @@ struct SettingsView: View {
             .disabled(store.isUpdating)
             .onChange(of: draft) { _, value in draftChanged(value != store.snapshot.preferences) }
             .onChange(of: store.snapshot.preferences) { _, value in draftChanged(draft != value) }
-            .onAppear { let p = store.snapshot.preferences; focus = p.focusMinutes; rest = p.breakMinutes; sound = p.soundEnabled; auto = p.autoStart; transparent = p.transparentFloatingBackground }
+            .onAppear { let p = store.snapshot.preferences; focus = p.focusMinutes; rest = p.breakMinutes; longRest = p.longBreakMinutes; longBreakInterval = p.longBreakInterval; sound = p.soundEnabled; auto = p.autoStart; transparent = p.transparentFloatingBackground }
     }
     private func durationRow(_ title: String, value: Binding<Int>, color: Color) -> some View {
         HStack { Circle().fill(color).frame(width: 8, height: 8); Text(title); Spacer(); TextField(title, value: value, format: .number).accessibilityLabel(title).textFieldStyle(.roundedBorder).frame(width: 48); Text("분").foregroundStyle(Theme.muted); Stepper(title, value: value, in: 1...60).labelsHidden() }

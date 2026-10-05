@@ -13,7 +13,7 @@ struct MenuBarTimerView: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack {
-                Text(timer.phase == .focus ? "집중" : "휴식").font(.headline).foregroundStyle(accent)
+                Text(timer.phase.title).font(.headline).foregroundStyle(accent)
                 Spacer()
                 Text(timer.status == .paused ? "일시정지 · 손잡이로 시간 조절" : timer.status == .running ? "진행 중" : "손잡이를 드래그해 시간 조절")
                     .font(.caption).foregroundStyle(Theme.secondary)

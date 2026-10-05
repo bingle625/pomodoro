@@ -28,7 +28,18 @@ public struct TimerEngine {
         guard state.status == .running, remaining(at: now) <= 0, let deadline = state.deadline else { return nil }
         let completion = event(at: deadline, focused: state.durationSeconds, completed: true)
         let taskID = state.taskID
-        let next: TimerPhase = state.phase == .focus ? .rest : .focus
+        let next: TimerPhase
+        if state.phase == .focus {
+            state.completedFocusCount += 1
+            if state.completedFocusCount >= preferences.longBreakInterval {
+                next = .longRest
+                state.completedFocusCount = 0
+            } else {
+                next = .rest
+            }
+        } else {
+            next = .focus
+        }
         prepare(phase: next, preferences: preferences)
         if preferences.autoStart, let taskID { start(taskID: taskID, preferences: preferences, at: now) }
         return completion
@@ -45,7 +56,9 @@ public struct TimerEngine {
         prepare(phase: state.phase, preferences: preferences)
     }
     private mutating func prepare(phase: TimerPhase, preferences: Preferences) {
+        let completedFocusCount = state.completedFocusCount
         state = TimerState(); state.phase = phase
+        state.completedFocusCount = completedFocusCount
         state.durationSeconds = preferences.duration(for: phase); state.remainingSeconds = state.durationSeconds
     }
     private func event(at endedAt: Date, focused: TimeInterval, completed: Bool) -> TimerCompletion? {

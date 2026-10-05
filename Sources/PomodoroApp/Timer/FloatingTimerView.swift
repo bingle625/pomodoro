@@ -8,7 +8,7 @@ struct FloatingTimerView: View {
             HStack {
                 IconButton(symbol: "xmark", label: "플로팅 창 닫기") { windows.hideFloating() }
                 Spacer()
-                Text(store.snapshot.timer.status == .paused ? "일시정지" : store.snapshot.timer.phase == .focus ? "집중" : "휴식").font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.accent(store.snapshot.timer.phase))
+                Text(store.snapshot.timer.status == .paused ? "일시정지" : store.snapshot.timer.phase.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Theme.accent(store.snapshot.timer.phase))
                     .frame(maxWidth: .infinity).frame(height: 32)
                     .overlay { WindowDragSurface().accessibilityHidden(true) }
                 Spacer()

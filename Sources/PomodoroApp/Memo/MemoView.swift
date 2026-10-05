@@ -20,8 +20,8 @@ struct MemoView: View {
                 TextEditor(text: $draft).font(.system(size: 14)).scrollContentBackground(.hidden).padding(8).focused($focused)
                 if draft.isEmpty { Text("예: 알고리즘 두 문제 풀이, 틀린 문제 정리").font(.system(size: 13)).foregroundStyle(Theme.muted).padding(14).allowsHitTesting(false) }
             }.frame(height: 126).background(.white, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
-            if store.snapshot.timer.phase == .rest && store.snapshot.timer.status == .running {
-                Label("휴식 시간이 흐르고 있어요  \(TimeFormatting.countdown(store.remainingSeconds))", systemImage: "leaf").font(.system(size: 12)).foregroundStyle(Theme.rest)
+            if store.snapshot.timer.phase != .focus && store.snapshot.timer.status == .running {
+                Label("\(store.snapshot.timer.phase.title) 시간이 흐르고 있어요  \(TimeFormatting.countdown(store.remainingSeconds))", systemImage: "leaf").font(.system(size: 12)).foregroundStyle(Theme.rest)
             }
             if let error { Text(error).font(.caption).foregroundStyle(Theme.error) }
             HStack {

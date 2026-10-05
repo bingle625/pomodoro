@@ -11,7 +11,7 @@ struct TimerBar: View {
             IconButton(symbol: "stop.fill", label: "종료", tint: Theme.muted) { perform { try store.stop() } }.disabled(store.snapshot.timer.status == .ready)
             Rectangle().fill(Theme.border).frame(width: 1, height: 22)
             VStack(alignment: .leading, spacing: 1) {
-                Text(store.snapshot.timer.phase == .focus ? "집중" : "휴식").font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.accent(store.snapshot.timer.phase))
+                Text(store.snapshot.timer.phase.title).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.accent(store.snapshot.timer.phase))
                 Text(TimeFormatting.countdown(store.remainingSeconds)).font(.system(size: 21, weight: .semibold)).monospacedDigit()
             }.frame(width: 80, alignment: .leading)
             ProgressView(value: store.remainingSeconds, total: store.snapshot.timer.durationSeconds).tint(Theme.accent(store.snapshot.timer.phase)).frame(width: 110)

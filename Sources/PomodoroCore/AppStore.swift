@@ -107,7 +107,8 @@ import Observation
     }
     public func updatePreferences(_ value: Preferences) throws {
         try ensureWritable()
-        guard (1...60).contains(value.focusMinutes), (1...60).contains(value.breakMinutes) else { throw PomodoroError.invalid("시간은 1~60분으로 설정해 주세요.") }
+        guard (1...60).contains(value.focusMinutes), (1...60).contains(value.breakMinutes), (1...60).contains(value.longBreakMinutes) else { throw PomodoroError.invalid("시간은 1~60분으로 설정해 주세요.") }
+        guard (1...12).contains(value.longBreakInterval) else { throw PomodoroError.invalid("긴 휴식 주기는 집중 1~12회로 설정해 주세요.") }
         var next = snapshot; next.preferences = value
         var engine = TimerEngine(state: next.timer); engine.refreshReady(preferences: value); next.timer = engine.state
         try commit(next)
@@ -123,6 +124,7 @@ import Observation
         if snapshot.timer.status == .ready {
             var preferences = snapshot.preferences
             if snapshot.timer.phase == .focus { preferences.focusMinutes = minutes }
+            else if snapshot.timer.phase == .longRest { preferences.longBreakMinutes = minutes }
             else { preferences.breakMinutes = minutes }
             try updatePreferences(preferences)
         } else {

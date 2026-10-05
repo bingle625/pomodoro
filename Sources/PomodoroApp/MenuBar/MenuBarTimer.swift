@@ -35,7 +35,7 @@ import PomodoroCore
     func synchronize() {
         let timer = store.snapshot.timer
         let time = TimeFormatting.countdown(store.remainingSeconds)
-        let phase = timer.phase == .focus ? "집중" : "휴식"
+        let phase = timer.phase.title
         let status = timer.status == .paused ? "일시정지" : timer.status == .ready ? "준비" : "진행 중"
         let key = "\(phase)-\(status)-\(time)"
         guard key != lastDisplayKey else { return }
