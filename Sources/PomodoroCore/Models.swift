@@ -13,7 +13,20 @@ public struct Preferences: Codable, Equatable {
     public var breakMinutes = 5
     public var soundEnabled = true
     public var autoStart = false
+    public var transparentFloatingBackground = false
     public init() {}
+    private enum CodingKeys: String, CodingKey {
+        case focusMinutes, breakMinutes, soundEnabled, autoStart, transparentFloatingBackground
+    }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        focusMinutes = try values.decode(Int.self, forKey: .focusMinutes)
+        breakMinutes = try values.decode(Int.self, forKey: .breakMinutes)
+        soundEnabled = try values.decode(Bool.self, forKey: .soundEnabled)
+        autoStart = try values.decode(Bool.self, forKey: .autoStart)
+        // Older state files predate the optional appearance setting.
+        transparentFloatingBackground = try values.decodeIfPresent(Bool.self, forKey: .transparentFloatingBackground) ?? false
+    }
     public func duration(for phase: TimerPhase) -> TimeInterval { Double(phase == .focus ? focusMinutes : breakMinutes) * 60 }
 }
 public enum TimerPhase: String, Codable { case focus, rest }

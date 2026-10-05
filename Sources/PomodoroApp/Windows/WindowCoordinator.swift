@@ -39,7 +39,13 @@ final class FloatingPanel: NSPanel {
             panel.contentView = NSHostingView(rootView: root); panel.isReleasedWhenClosed = false
             panel.center(); panel.setFrameAutosaveName("PomodoroFloating"); floating = panel
         }
+        synchronizeFloatingAppearance()
         if let panel = floating { keepVisible(panel); panel.orderFrontRegardless() }
+    }
+    func synchronizeFloatingAppearance() {
+        guard let panel = floating else { return }
+        panel.hasShadow = !store.snapshot.preferences.transparentFloatingBackground
+        panel.invalidateShadow()
     }
     func hideFloating() { floating?.orderOut(nil) }
     func screenConfigurationChanged() { if let floating { keepVisible(floating) } }

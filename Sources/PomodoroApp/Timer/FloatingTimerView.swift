@@ -23,6 +23,7 @@ struct FloatingTimerView: View {
                     do { switch store.snapshot.timer.status { case .ready: try store.start(); case .running: try store.pause(); case .paused: try store.resume() } } catch { windows.showMain() }
                 }.disabled(store.isReadOnly || store.hasPendingSave)
             }.padding(.bottom, 16)
-        }.frame(width: 320, height: 360).background(Theme.background).foregroundStyle(Theme.text).preferredColorScheme(.light).disabled(store.isUpdating)
+        }.frame(width: 320, height: 360).background(store.snapshot.preferences.transparentFloatingBackground ? Color.clear : Theme.background).foregroundStyle(Theme.text).preferredColorScheme(.light).disabled(store.isUpdating)
+            .onChange(of: store.snapshot.preferences.transparentFloatingBackground) { _, _ in windows.synchronizeFloatingAppearance() }
     }
 }

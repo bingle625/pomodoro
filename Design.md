@@ -147,3 +147,7 @@ iconutil -c icns Packaging/AppIcon.iconset -o Packaging/AppIcon.icns
 ```
 
 `Packaging/Info.plist`의 `CFBundleIconFile`과 빌드 스크립트가 `AppIcon.icns`를 앱 번들에 연결한다.
+
+### 플로팅 타이머 배경 투명 설정
+
+설정의 ‘플로팅 타이머 배경 투명’을 켜고 저장하면 플로팅 창의 연보라 배경과 창 그림자를 숨긴다. 타이머 부채꼴·눈금·숫자·조작 버튼의 불투명도는 유지하며, 기존 드래그 영역을 그대로 사용한다. 기본값은 꺼짐이고 설정을 로컬 기록 파일에 저장한다. 이전 버전의 파일에 이 설정이 없으면 꺼짐으로 읽는다.
