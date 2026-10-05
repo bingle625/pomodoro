@@ -112,6 +112,27 @@ import Observation
         var engine = TimerEngine(state: next.timer); engine.refreshReady(preferences: value); next.timer = engine.state
         try commit(next)
     }
+    public var maximumAdjustableMinutes: Int {
+        let elapsed = snapshot.timer.status == .paused ? snapshot.timer.durationSeconds - snapshot.timer.remainingSeconds : 0
+        return max(0, min(60, Int(floor((3600 - elapsed) / 60))))
+    }
+    public func adjustRemainingMinutes(_ minutes: Int) throws {
+        try ensureWritable()
+        guard snapshot.timer.status != .running else { throw PomodoroError.invalid("시간을 조절하려면 먼저 일시정지해 주세요.") }
+        guard minutes >= 1, minutes <= maximumAdjustableMinutes else { throw PomodoroError.invalid("전체 세션이 60분 이내가 되도록 남은 시간을 선택해 주세요.") }
+        if snapshot.timer.status == .ready {
+            var preferences = snapshot.preferences
+            if snapshot.timer.phase == .focus { preferences.focusMinutes = minutes }
+            else { preferences.breakMinutes = minutes }
+            try updatePreferences(preferences)
+        } else {
+            var next = snapshot
+            let elapsed = next.timer.durationSeconds - next.timer.remainingSeconds
+            next.timer.remainingSeconds = Double(minutes * 60)
+            next.timer.durationSeconds = elapsed + next.timer.remainingSeconds
+            try commit(next)
+        }
+    }
     public func saveMemo(recordID: UUID, text: String) throws {
         try ensureWritable(); var next = snapshot
         guard let index = next.records.firstIndex(where: { $0.id == recordID }) else { throw PomodoroError.invalid("기록을 찾을 수 없어요.") }

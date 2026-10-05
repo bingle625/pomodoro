@@ -6,6 +6,7 @@ struct MenuBarTimerView: View {
     let perform: (() throws -> Void) -> Void
     let openMain: () -> Void
     let openFloating: () -> Void
+    @State private var previewMinutes: Int?
     private var accent: Color { Theme.accent(store.snapshot.timer.phase) }
     private var timer: TimerState { store.snapshot.timer }
 
@@ -14,13 +15,13 @@ struct MenuBarTimerView: View {
             HStack {
                 Text(timer.phase == .focus ? "집중" : "휴식").font(.headline).foregroundStyle(accent)
                 Spacer()
-                Text(timer.status == .paused ? "일시정지" : timer.status == .running ? "진행 중" : "준비")
+                Text(timer.status == .paused ? "일시정지 · 손잡이로 시간 조절" : timer.status == .running ? "진행 중" : "손잡이를 드래그해 시간 조절")
                     .font(.caption).foregroundStyle(Theme.secondary)
             }
-            TimerDial(remainingSeconds: store.remainingSeconds, phase: timer.phase)
+            AdjustableTimerDial(store: store, perform: perform, previewMinutes: $previewMinutes)
                 .frame(width: 280, height: 260)
             HStack(spacing: 16) {
-                Text(TimeFormatting.countdown(store.remainingSeconds))
+                Text(TimeFormatting.countdown(previewMinutes.map { Double($0 * 60) } ?? store.remainingSeconds))
                     .font(.system(size: 32, weight: .semibold)).monospacedDigit().foregroundStyle(accent)
                 Spacer()
                 IconButton(symbol: timer.status == .running ? "pause.fill" : "play.fill", label: timer.status == .running ? "일시정지" : timer.status == .paused ? "재개" : "시작", tint: accent) {
