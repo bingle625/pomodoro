@@ -25,11 +25,17 @@ import PomodoroCore
             installMenu(); windows.showMain(); windows.synchronizeMemo(); updates.start()
             ticker = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in Task { @MainActor in self?.update() } }
             if let ticker { RunLoop.main.add(ticker, forMode: .common) }
+            NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
             NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(woke), name: NSWorkspace.didWakeNotification, object: nil)
             NotificationCenter.default.addObserver(self, selector: #selector(screenChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
         } catch { let alert = NSAlert(); alert.messageText = "앱을 시작할 수 없어요"; alert.informativeText = error.localizedDescription; alert.runModal(); NSApp.terminate(nil) }
     }
     private func update() { try? store.tick(); windows.synchronizeMemo(); menuBarTimer?.synchronize(); updates.synchronize() }
+    @objc private func willSleep() {
+        // Save synchronously before suspension; wake only refreshes the paused state.
+        do { try store.pauseForSleep() } catch { /* Persistent storage error and retry are shown after wake. */ }
+        menuBarTimer?.synchronize()
+    }
     @objc private func woke() { update() }
     @objc private func screenChanged() { windows.screenConfigurationChanged() }
     func applicationDidBecomeActive(_ notification: Notification) { if store != nil { update() } }

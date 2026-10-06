@@ -7,11 +7,21 @@ struct MemoView: View {
     @State private var draft = ""
     @State private var taskID: UUID?
     @State private var error: String?
+    @State private var confirmingDelete = false
+    @State private var deletionPending = false
     @FocusState private var focused: Bool
     private var record: FocusRecord? { store.snapshot.records.first { $0.id == recordID } }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack { Image(systemName: "square.and.pencil").foregroundStyle(Theme.focus); Text("잠깐의 회고").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.secondary) }
+            HStack {
+                Image(systemName: "square.and.pencil").foregroundStyle(Theme.focus)
+                Text("잠깐의 회고").font(.system(size: 12, weight: .semibold)).foregroundStyle(Theme.secondary)
+                Spacer()
+                Button(deletionPending ? "삭제 다시 시도" : "기록 삭제", role: .destructive) {
+                    if deletionPending { deleteRecord() } else { confirmingDelete = true }
+                }.buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(Theme.error)
+                    .disabled(store.isReadOnly || store.isUpdating || (store.hasPendingSave && !deletionPending))
+            }
             Text("이번 집중 시간에\n무엇을 했나요?").font(.system(size: 25, weight: .semibold)).lineSpacing(4)
             if let record {
                 VStack(alignment: .leading, spacing: 8) {
@@ -20,7 +30,7 @@ struct MemoView: View {
                             Text(task.name).tag(Optional(task.id))
                         }
                     }.pickerStyle(.menu)
-                        .disabled(store.isReadOnly || store.isUpdating || store.hasPendingSave)
+                        .disabled(store.isReadOnly || store.isUpdating || store.hasPendingSave || deletionPending)
                     Text("저장하면 선택한 작업으로 기록을 옮겨요.")
                         .font(.system(size: 11)).foregroundStyle(Theme.muted)
                     Text("\(TimeFormatting.duration(record.focusedSeconds)) · \(TimeFormatting.date(record.endedAt, pattern: "M월 d일 HH:mm"))")
@@ -28,7 +38,7 @@ struct MemoView: View {
                 }
             }
             ZStack(alignment: .topLeading) {
-                TextEditor(text: $draft).font(.system(size: 14)).scrollContentBackground(.hidden).padding(8).focused($focused)
+                TextEditor(text: $draft).font(.system(size: 14)).scrollContentBackground(.hidden).padding(8).focused($focused).disabled(deletionPending)
                 if draft.isEmpty { Text("예: 알고리즘 두 문제 풀이, 틀린 문제 정리").font(.system(size: 13)).foregroundStyle(Theme.muted).padding(14).allowsHitTesting(false) }
             }.frame(height: 126).background(.white, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
             if store.snapshot.timer.phase != .focus && store.snapshot.timer.status == .running {
@@ -39,10 +49,27 @@ struct MemoView: View {
                 Text("⌘ ↵ 저장").font(.system(size: 11)).foregroundStyle(Theme.muted)
                 Spacer()
                 Button("건너뛰기") { finish(save: false) }.buttonStyle(.plain).foregroundStyle(Theme.secondary)
-                Button(store.hasPendingSave ? "저장 다시 시도" : "저장") { finish(save: true) }.buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.return, modifiers: .command)
+                Button(store.hasPendingSave ? "저장 다시 시도" : "저장") { finish(save: true) }.buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.return, modifiers: .command).disabled(deletionPending)
             }
         }.padding(28).frame(width: 420).background(Theme.background).preferredColorScheme(.light)
             .onAppear { draft = record?.memo ?? ""; taskID = record?.taskID; focused = true }
+            .alert("이 기록을 삭제할까요?", isPresented: $confirmingDelete) {
+                Button("취소", role: .cancel) {}
+                Button("삭제", role: .destructive) { deleteRecord() }
+            } message: {
+                Text("이 집중 기록과 메모가 삭제되고 통계에서 제외됩니다. 삭제한 기록은 되돌릴 수 없어요.")
+            }
+    }
+    private func deleteRecord() {
+        do {
+            if store.hasPendingSave { try store.retrySave() }
+            // Another window may already have retried the pending deletion.
+            if record != nil { try store.deleteRecord(recordID: recordID) }
+            close()
+        } catch {
+            deletionPending = store.hasPendingSave
+            self.error = error.localizedDescription
+        }
     }
     private func finish(save: Bool) {
         do {

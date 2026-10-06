@@ -68,6 +68,34 @@ import Observation
         try tick()
         try editTimer { $0.pause(at: $1); return nil }
     }
+    public func pauseForSleep() throws {
+        guard !isReadOnly, !isUpdating else { return }
+        if pending == nil {
+            do { try pause(); return }
+            catch { guard pending != nil else { throw error } }
+        }
+        // Preserve any unsaved edit while freezing its timer before the Mac sleeps.
+        guard let (saved, bell) = pending else { return }
+        var value = saved
+        currentDate = now()
+        if bell, value.timer.status == .running {
+            // An auto-start deferred by a failed save has not begun yet.
+            value.timer.startedAt = currentDate
+            value.timer.deadline = currentDate.addingTimeInterval(value.timer.durationSeconds)
+        }
+        var engine = TimerEngine(state: value.timer)
+        engine.pause(at: currentDate)
+        value.timer = engine.state
+        try commit(value, bell: bell)
+    }
+    public func deleteRecord(recordID: UUID) throws {
+        try ensureWritable()
+        guard snapshot.records.contains(where: { $0.id == recordID }) else { throw PomodoroError.invalid("기록을 찾을 수 없어요.") }
+        var next = snapshot
+        next.records.removeAll { $0.id == recordID }
+        next.pendingMemoIDs.removeAll { $0 == recordID }
+        try commit(next)
+    }
     public func resume() throws { try editTimer { $0.resume(at: $1); return nil } }
     public func stop() throws {
         try tick()
