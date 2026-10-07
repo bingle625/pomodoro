@@ -97,6 +97,12 @@ import Observation
         try commit(next)
     }
     public func resume() throws { try editTimer { $0.resume(at: $1); return nil } }
+    public func prepareForTermination() throws {
+        // Unreadable data must stay untouched; the updater owns its installation lifecycle.
+        guard !isReadOnly, !isUpdating else { return }
+        if hasPendingSave { try retrySave() }
+        try stop()
+    }
     public func stop() throws {
         try tick()
         let p = snapshot.preferences

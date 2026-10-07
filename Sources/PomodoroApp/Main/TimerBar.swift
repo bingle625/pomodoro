@@ -8,7 +8,7 @@ struct TimerBar: View {
             IconButton(symbol: store.snapshot.timer.status == .running ? "pause.fill" : "play.fill", label: store.snapshot.timer.status == .running ? "일시정지" : "시작", tint: Theme.text) {
                 perform { switch store.snapshot.timer.status { case .ready: try store.start(); case .running: try store.pause(); case .paused: try store.resume() } }
             }
-            IconButton(symbol: "stop.fill", label: "종료", tint: Theme.muted) { perform { try store.stop() } }.disabled(store.snapshot.timer.status == .ready)
+            IconButton(symbol: "stop.fill", label: "종료", tint: Theme.muted) { perform { try store.stop() } }.disabled(store.snapshot.timer.status == .ready && store.snapshot.timer.phase == .focus && store.snapshot.timer.completedFocusCount == 0)
             Rectangle().fill(Theme.border).frame(width: 1, height: 22)
             VStack(alignment: .leading, spacing: 1) {
                 Text(store.snapshot.timer.phase.title).font(.system(size: 10, weight: .medium)).foregroundStyle(Theme.accent(store.snapshot.timer.phase))

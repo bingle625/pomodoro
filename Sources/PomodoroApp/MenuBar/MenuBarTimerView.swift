@@ -45,7 +45,7 @@ struct MenuBarTimerView: View {
                 }
                 IconButton(symbol: "stop.fill", label: "타이머 종료", tint: accent) {
                     perform { try store.stop() }
-                }.disabled(timer.status == .ready)
+                }.disabled(timer.status == .ready && timer.phase == .focus && timer.completedFocusCount == 0)
             }.disabled(store.isReadOnly || store.hasPendingSave || store.isUpdating)
             HStack {
                 Text("현재 \(TimeFormatting.date(store.currentDate, pattern: "HH:mm"))")

@@ -42,10 +42,12 @@ import PomodoroCore
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { windows.showMain(); return true }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard store.hasPendingSave else { return .terminateNow }
-        let alert = NSAlert(); alert.messageText = "아직 저장하지 못한 기록이 있어요"; alert.informativeText = "종료 전에 저장을 다시 시도해 주세요."
+        guard let store else { return .terminateNow }
+        do { try store.prepareForTermination(); return .terminateNow }
+        catch { /* Keep the app open if the final record and cycle reset could not be saved. */ }
+        let alert = NSAlert(); alert.messageText = "아직 저장하지 못한 기록이 있어요"; alert.informativeText = "집중 기록과 주기 초기화를 저장한 뒤 종료합니다. 다시 시도해 주세요."
         alert.addButton(withTitle: "돌아가기"); alert.addButton(withTitle: "저장 다시 시도")
-        if alert.runModal() == .alertSecondButtonReturn { do { try store.retrySave(); return .terminateNow } catch { windows.showError(error) } }
+        if alert.runModal() == .alertSecondButtonReturn { do { try store.prepareForTermination(); return .terminateNow } catch { windows.showError(error) } }
         return .terminateCancel
     }
     private func installMenu() {

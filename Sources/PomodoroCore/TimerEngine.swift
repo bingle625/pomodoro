@@ -45,9 +45,10 @@ public struct TimerEngine {
         return completion
     }
     public mutating func stop(at now: Date, preferences: Preferences) -> TimerCompletion? {
-        guard state.status != .ready else { return nil }
+        guard state.status != .ready || state.phase != .focus || state.completedFocusCount != 0 else { return nil }
         let elapsed = state.durationSeconds - remaining(at: now)
-        let completion = elapsed >= 1 ? event(at: now, focused: elapsed, completed: false) : nil
+        let completion = state.status != .ready && elapsed >= 1 ? event(at: now, focused: elapsed, completed: false) : nil
+        state.completedFocusCount = 0
         prepare(phase: .focus, preferences: preferences)
         return completion
     }

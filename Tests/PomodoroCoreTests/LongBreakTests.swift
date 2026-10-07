@@ -23,7 +23,7 @@ final class LongBreakTests: XCTestCase {
         }
     }
 
-    func testInterruptedFocusAndPreferenceRefreshPreserveCycle() throws {
+    func testStoppedFocusStartsNewCycleAfterPreferenceRefresh() throws {
         var p = try preferences(); p.autoStart = false
         var now = Date(timeIntervalSince1970: 1_800_000_000)
         let task = UUID()
@@ -34,12 +34,75 @@ final class LongBreakTests: XCTestCase {
         now += 60; _ = engine.advance(at: now, preferences: p)
         engine.start(taskID: task, preferences: p, at: now)
         now += 10; _ = engine.stop(at: now, preferences: p)
-        XCTAssertEqual(engine.state.completedFocusCount, 1)
+        XCTAssertEqual(engine.state.completedFocusCount, 0)
         engine.refreshReady(preferences: p)
         engine.start(taskID: task, preferences: p, at: now)
         now += 60; _ = engine.advance(at: now, preferences: p)
-        XCTAssertEqual(engine.state.phase.rawValue, "longRest")
+        XCTAssertEqual(engine.state.phase, .rest)
+        XCTAssertEqual(engine.state.completedFocusCount, 1)
+        engine.start(taskID: task, preferences: p, at: now)
+        now += 60; _ = engine.advance(at: now, preferences: p)
+        engine.start(taskID: task, preferences: p, at: now)
+        now += 60; _ = engine.advance(at: now, preferences: p)
+        XCTAssertEqual(engine.state.phase, .longRest)
         XCTAssertEqual(engine.state.status, .ready)
+    }
+
+    @MainActor func testStopDuringFocusOrRestResetsCycleAndPersistsBeforeRestart() throws {
+        for phase in [TimerPhase.focus, .rest, .longRest] {
+            for paused in [false, true] {
+                var now = Date(timeIntervalSince1970: 1_800_000_000)
+                var snapshot = AppSnapshot()
+                snapshot.timer.phase = phase; snapshot.timer.completedFocusCount = 3
+                let repo = MemoryRepository(); repo.value = snapshot
+                let store = AppStore(repository: repo, now: { now }); try store.load(); try store.start()
+                if paused { now += 10; try store.pause() }
+                try store.stop()
+                XCTAssertEqual(store.snapshot.timer.completedFocusCount, 0)
+                XCTAssertEqual(store.snapshot.timer.phase, .focus)
+                let restored = AppStore(repository: repo, now: { now }); try restored.load(); try restored.start()
+                XCTAssertEqual(restored.snapshot.timer.completedFocusCount, 0)
+                now += 1500; try restored.tick()
+                XCTAssertEqual(restored.snapshot.timer.phase, .rest)
+                XCTAssertEqual(restored.snapshot.timer.completedFocusCount, 1)
+            }
+        }
+    }
+
+    @MainActor func testStopAtDeadlineResetsCycleAfterCompletionIsRecorded() throws {
+        var now = Date(timeIntervalSince1970: 1_800_000_000)
+        var snapshot = AppSnapshot(); snapshot.timer.completedFocusCount = 2
+        let repo = MemoryRepository(); repo.value = snapshot
+        let store = AppStore(repository: repo, now: { now }); try store.load(); try store.start()
+        now += 1500; try store.stop()
+        XCTAssertEqual(store.snapshot.records.count, 1)
+        XCTAssertEqual(store.snapshot.records[0].completed, true)
+        XCTAssertEqual(store.snapshot.timer.phase, .focus)
+        XCTAssertEqual(store.snapshot.timer.completedFocusCount, 0)
+        try store.start()
+        XCTAssertEqual(store.snapshot.timer.phase, .focus)
+    }
+
+    func testStopWhileWaitingForRestResetsCycleWithoutCreatingRecord() throws {
+        var state = TimerState(); state.phase = .rest; state.completedFocusCount = 2
+        var engine = TimerEngine(state: state)
+        XCTAssertNil(engine.stop(at: Date(), preferences: Preferences()))
+        XCTAssertEqual(engine.state.phase, .focus)
+        XCTAssertEqual(engine.state.completedFocusCount, 0)
+        XCTAssertEqual(engine.state.status, .ready)
+    }
+
+    func testPauseAndResumePreserveCycle() throws {
+        let p = try preferences()
+        var state = TimerState(); state.completedFocusCount = 1
+        var engine = TimerEngine(state: state)
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        engine.start(taskID: UUID(), preferences: p, at: now)
+        engine.pause(at: now.addingTimeInterval(10))
+        engine.resume(at: now.addingTimeInterval(100))
+        XCTAssertEqual(engine.state.completedFocusCount, 1)
+        _ = engine.advance(at: now.addingTimeInterval(150), preferences: p)
+        XCTAssertEqual(engine.state.phase, .longRest)
     }
 
     func testLegacySnapshotDefaultsToLongBreakAfterFourFocusSessions() throws {
