@@ -107,9 +107,28 @@ public struct AppSnapshot: Codable, Equatable {
     public var timer = TimerState()
     public var records: [FocusRecord] = []
     public var pendingMemoIDs: [UUID] = []
+    public var examPresets: [ExamPreset] = []
+    public var examTimer = ExamTimerState()
     public init() {
         let task = FocusTask(name: "나의 집중")
         tasks = [task]; selectedTaskID = task.id
+        examPresets = [ExamPreset.hmatSample]
+    }
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, tasks, selectedTaskID, preferences, timer, records, pendingMemoIDs, examPresets, examTimer
+    }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try c.decode(Int.self, forKey: .schemaVersion)
+        tasks = try c.decode([FocusTask].self, forKey: .tasks)
+        selectedTaskID = try c.decode(UUID.self, forKey: .selectedTaskID)
+        preferences = try c.decode(Preferences.self, forKey: .preferences)
+        timer = try c.decode(TimerState.self, forKey: .timer)
+        records = try c.decodeIfPresent([FocusRecord].self, forKey: .records) ?? []
+        pendingMemoIDs = try c.decodeIfPresent([UUID].self, forKey: .pendingMemoIDs) ?? []
+        // The exam timer predates these fields; older state files simply have none.
+        examPresets = try c.decodeIfPresent([ExamPreset].self, forKey: .examPresets) ?? []
+        examTimer = try c.decodeIfPresent(ExamTimerState.self, forKey: .examTimer) ?? ExamTimerState()
     }
 }
 public enum PomodoroError: LocalizedError {

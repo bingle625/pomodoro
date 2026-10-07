@@ -44,5 +44,24 @@ public struct LocalRepository: SnapshotRepository {
             guard let task = s.timer.taskID, taskIDs.contains(task), s.timer.startedAt != nil,
                   s.timer.status != .running || s.timer.deadline != nil else { throw PomodoroError.invalid("진행 중인 타이머 정보가 올바르지 않습니다.") }
         }
+        try validateExam(s)
+    }
+    static func validateExam(_ s: AppSnapshot) throws {
+        let presetIDs = Set(s.examPresets.map(\.id))
+        guard presetIDs.count == s.examPresets.count,
+              s.examPresets.allSatisfy({ isValidSections($0.sections) && !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        else { throw PomodoroError.invalid("시험 세트 형식이 올바르지 않습니다.") }
+        let e = s.examTimer
+        if e.status != .ready {
+            guard isValidSections(e.sections), e.sections.indices.contains(e.currentIndex), e.startedAt != nil,
+                  e.durationSeconds.isFinite, e.durationSeconds > 0,
+                  e.remainingSeconds.isFinite, (0...e.durationSeconds).contains(e.remainingSeconds),
+                  e.status != .running || e.deadline != nil
+            else { throw PomodoroError.invalid("진행 중인 시험 정보가 올바르지 않습니다.") }
+        }
+    }
+    private static func isValidSections(_ sections: [ExamSection]) -> Bool {
+        !sections.isEmpty && sections.count <= 20
+            && sections.allSatisfy { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && (1...180).contains($0.minutes) }
     }
 }

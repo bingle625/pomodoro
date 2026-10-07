@@ -9,14 +9,17 @@ public struct UpdateSafety {
     public var editorOpen: Bool
     public var settingsOpen: Bool
     public var settingsDirty: Bool
-    public init(timerStatus: TimerStatus = .ready, savePending: Bool = false, readOnly: Bool = false, memoPending: Bool = false, editorOpen: Bool = false, settingsOpen: Bool = false, settingsDirty: Bool = false) {
+    public var examActive: Bool
+    public init(timerStatus: TimerStatus = .ready, savePending: Bool = false, readOnly: Bool = false, memoPending: Bool = false, editorOpen: Bool = false, settingsOpen: Bool = false, settingsDirty: Bool = false, examActive: Bool = false) {
         self.timerStatus = timerStatus; self.savePending = savePending; self.readOnly = readOnly
         self.memoPending = memoPending; self.editorOpen = editorOpen
         self.settingsOpen = settingsOpen; self.settingsDirty = settingsDirty
+        self.examActive = examActive
     }
     public var blockingReason: String? { blockingReason(automatic: false) }
     public func blockingReason(automatic: Bool) -> String? {
         if savePending || readOnly { return "기록 저장 문제를 해결하면 업데이트를 설치합니다." }
+        if examActive { return "진행 중인 시험이 끝나면 업데이트를 설치합니다." }
         if timerStatus == .paused { return "타이머가 일시정지되어 있어요. 타이머를 재개해 마치거나 종료하면 설치합니다." }
         if timerStatus == .running { return "진행 중인 타이머가 끝나면 업데이트를 설치합니다." }
         if memoPending || editorOpen { return "메모와 편집 중인 작업을 저장하고 창을 닫으면 설치합니다." }

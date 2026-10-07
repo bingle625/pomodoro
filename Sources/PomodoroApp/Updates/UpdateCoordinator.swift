@@ -31,7 +31,7 @@ import PomodoroCore
     private var safety: UpdateSafety {
         UpdateSafety(timerStatus: store.snapshot.timer.status, savePending: store.hasPendingSave,
                      readOnly: store.isReadOnly, memoPending: store.memoSessionID != nil, editorOpen: hasOpenEditor(),
-                     settingsOpen: settingsState().open, settingsDirty: settingsState().dirty)
+                     settingsOpen: settingsState().open, settingsDirty: settingsState().dirty, examActive: store.isExamActive)
     }
     func synchronize() {
         automaticallyChecks = controller.updater.automaticallyChecksForUpdates

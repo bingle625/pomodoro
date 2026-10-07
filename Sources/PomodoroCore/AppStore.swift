@@ -59,6 +59,7 @@ import Observation
         guard !isReadOnly, !isUpdating, pending == nil else { return }
         let p = snapshot.preferences
         try editTimer { $0.advance(at: $1, preferences: p) }
+        try examTick()
     }
     public func start() throws {
         let p = snapshot.preferences, id = snapshot.selectedTaskID
@@ -70,6 +71,8 @@ import Observation
     }
     public func pauseForSleep() throws {
         guard !isReadOnly, !isUpdating else { return }
+        // Freeze the exam before the Mac sleeps; wake only refreshes the paused state.
+        if pending == nil, snapshot.examTimer.status == .running { try editExam { $0.pause(at: $1) } }
         if pending == nil {
             do { try pause(); return }
             catch { guard pending != nil else { throw error } }
@@ -101,6 +104,7 @@ import Observation
         // Unreadable data must stay untouched; the updater owns its installation lifecycle.
         guard !isReadOnly, !isUpdating else { return }
         if hasPendingSave { try retrySave() }
+        if snapshot.examTimer.status != .ready { try editExam { engine, _ in engine.stop() } }
         try stop()
     }
     public func stop() throws {
@@ -180,5 +184,66 @@ import Observation
     }
     public func skipMemo(recordID: UUID) throws {
         try ensureWritable(); var next = snapshot; next.pendingMemoIDs.removeAll { $0 == recordID }; try commit(next)
+    }
+
+    // MARK: Exam — sequential multi-section timer (no focus records)
+
+    public var examRemainingSeconds: TimeInterval { ExamEngine(state: snapshot.examTimer).remaining(at: currentDate) }
+    public var currentExamSection: ExamSection? { ExamEngine(state: snapshot.examTimer).currentSection }
+    public var isExamActive: Bool { snapshot.examTimer.status != .ready }
+
+    private func editExam(_ action: (inout ExamEngine, Date) -> Void) throws {
+        try ensureWritable(); currentDate = now()
+        var next = snapshot; var engine = ExamEngine(state: next.examTimer)
+        action(&engine, currentDate); next.examTimer = engine.state
+        if next != snapshot { try commit(next) }
+    }
+    public func examTick() throws {
+        currentDate = now()
+        guard !isReadOnly, !isUpdating, pending == nil, snapshot.examTimer.status == .running else { return }
+        var next = snapshot; var engine = ExamEngine(state: next.examTimer)
+        let event = engine.advance(at: currentDate); next.examTimer = engine.state
+        if next != snapshot { try commit(next, bell: event != nil) }
+    }
+    public func startExam(presetID: UUID) throws {
+        try ensureWritable()
+        guard snapshot.examTimer.status == .ready else { throw PomodoroError.invalid("진행 중인 시험을 먼저 종료해 주세요.") }
+        guard snapshot.timer.status == .ready else { throw PomodoroError.invalid("진행 중인 타이머를 먼저 종료해 주세요.") }
+        guard let preset = snapshot.examPresets.first(where: { $0.id == presetID }) else { throw PomodoroError.invalid("시험 세트를 찾을 수 없어요.") }
+        let sections = try validatedSections(preset.sections)
+        try editExam { $0.start(sections: sections, presetName: preset.name, at: $1) }
+    }
+    public func pauseExam() throws { try examTick(); try editExam { $0.pause(at: $1) } }
+    public func resumeExam() throws { try editExam { $0.resume(at: $1) } }
+    public func stopExam() throws { try editExam { engine, _ in engine.stop() } }
+
+    private func validatedSections(_ sections: [ExamSection]) throws -> [ExamSection] {
+        guard !sections.isEmpty else { throw PomodoroError.invalid("구간을 하나 이상 추가해 주세요.") }
+        guard sections.count <= 20 else { throw PomodoroError.invalid("구간은 최대 20개까지 추가할 수 있어요.") }
+        return try sections.map { section in
+            let name = section.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { throw PomodoroError.invalid("구간 이름을 입력해 주세요.") }
+            guard (1...180).contains(section.minutes) else { throw PomodoroError.invalid("구간 시간은 1~180분으로 설정해 주세요.") }
+            return ExamSection(id: section.id, name: name, minutes: section.minutes)
+        }
+    }
+    @discardableResult public func addExamPreset(name: String, sections: [ExamSection]) throws -> UUID {
+        try ensureWritable()
+        let preset = ExamPreset(name: try validName(name), sections: try validatedSections(sections))
+        var next = snapshot; next.examPresets.append(preset); try commit(next)
+        return preset.id
+    }
+    public func updateExamPreset(id: UUID, name: String, sections: [ExamSection]) throws {
+        try ensureWritable()
+        guard snapshot.examTimer.status == .ready else { throw PomodoroError.invalid("진행 중인 시험을 먼저 종료해 주세요.") }
+        let name = try validName(name); let sections = try validatedSections(sections)
+        var next = snapshot
+        guard let index = next.examPresets.firstIndex(where: { $0.id == id }) else { throw PomodoroError.invalid("시험 세트를 찾을 수 없어요.") }
+        next.examPresets[index].name = name; next.examPresets[index].sections = sections
+        try commit(next)
+    }
+    public func deleteExamPreset(id: UUID) throws {
+        try ensureWritable()
+        var next = snapshot; next.examPresets.removeAll { $0.id == id }; try commit(next)
     }
 }

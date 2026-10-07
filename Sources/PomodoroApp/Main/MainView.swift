@@ -26,12 +26,14 @@ struct MainView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         header
-                        HStack(spacing: 24) { ForEach(["요약", "회고"], id: \.self) { value in
+                        HStack(spacing: 24) { ForEach(["요약", "회고", "시험"], id: \.self) { value in
                             Button { tab = value } label: {
                                 VStack(spacing: 8) { Text(value).font(.system(size: 16, weight: .semibold)); Capsule().fill(tab == value ? Theme.text : .clear).frame(height: 2) }.fixedSize(horizontal: true, vertical: false)
                             }.buttonStyle(.plain).foregroundStyle(tab == value ? Theme.text : Theme.muted)
                         } }
-                        if tab == "요약" { SummaryView(store: store) } else { ReviewView(store: store) { windows.showMemo(recordID: $0) } }
+                        if tab == "요약" { SummaryView(store: store) }
+                        else if tab == "회고" { ReviewView(store: store) { windows.showMemo(recordID: $0) } }
+                        else { ExamView(store: store) }
                     }.frame(maxWidth: 1120).padding(28).frame(maxWidth: .infinity)
                 }
                 TimerBar(store: store) { windows.showFloating() }.padding(.bottom, 22).padding(.top, 12)
